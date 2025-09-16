@@ -1,0 +1,44 @@
+[project]
+requires-python = ">=3.11,<4.0"
+name = "offline_meeting_notes"
+version = "0.1.0"
+description = "Offline meeting notetaker using pyannote.audio, Whisper, and transformers."
+readme = "README.md"
+dependencies = [
+    "pyannote.audio",
+    "openai-whisper",
+    "transformers",
+    "pytest",
+    "accelerate",
+    "triton==3.4",
+    "kernels",
+    "pypandoc",
+    "whisperx",
+    "librosa",
+    "scipy",
+    "numpy",
+    "ollama",
+    "torch",
+    "torchvision",
+]
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cu129" },
+]
+torchvision = [
+  { index = "pytorch-cu129" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu129"
+url = "https://download.pytorch.org/whl/cu129"
+explicit = true
+
+[project.scripts]
+offline-meeting-notes = "offline_meeting_notes.cli:main"
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
