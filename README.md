@@ -75,8 +75,8 @@ offline-meeting-notes -h
 offline-meeting-notes -f <zoom_recording_folder> -l <llm model> -o <output_folder> --start-time "YYYY-MM-DD HH:MM:SS" --over-write
 ```
 
-## Notes:
-# Zoom Settings
+# Notes:
+## Zoom Settings
 Set Local recording storage for your zoom recordings.
 
 It's recommended (required) to adjust some settings for your zoom recordings:
@@ -84,11 +84,11 @@ From zoom app -> Settings -> Recording -> Advanced:
 - Record separate participant audio files
 - Optimize for 3rd party video editors
 
-# LLM Compatibility
+## LLM Compatibility
 Currently Only 'thinking' models from Ollama are supported. Ensure your Ollama server is running and accessible.
-# GPU Support
+## GPU Support
 Ensure you have a compatible NVIDIA GPU and the correct CUDA version installed for PyTorch. (recommended at least 12GB VRAM)
-# Zoom Recording Structure
+## Zoom Recording Structure
 The folder structure should be similar to Zoom's default recording layout
 The 'Audio Record' folder must be named exactly that.
 Structure must look like:
@@ -100,7 +100,7 @@ Structure must look like:
         <audio2>.mp4
         ...
 ```
-# Whisperx known issue
+## Whisperx known issue
 If using whisperx and you get a 'Could not load library libcudnn_ops_infer.so.8. Error: libcudnn_ops_infer.so.8: cannot open shared object file: No such file or directory
 Aborted (core dumped)' error, try: (This fix is for Ubuntu distros)
 
