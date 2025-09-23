@@ -116,6 +116,7 @@ def ollama_api_notes(
     transcript_path: str,
     model: str,
     think: Literal["low", "medium", "high"] | bool = "high",
+    save_thought_process: bool = True,
 ) -> str:
 
     with open(transcript_path, "r", encoding="utf-8") as f:
@@ -131,13 +132,19 @@ def ollama_api_notes(
         )
 
     # TODO: This is setup only for thinking models, should generalize inputs for other smaller models too
+    # NOTE: Think parameter hasn't been give updated type hints in ollama package as of 2025-09-18
     response = generate(
         model=model,
         prompt=prompt,
         system=SYS_PROMPT_JSON,
-        think=think,
+        think=think, # type: ignore
         options={"num_ctx": approx_tokens},
-    )
+    ) # type: ignore
+
+    # If save thought process is enabled, print out to file for debugging
+    if save_thought_process:
+        with open(transcript_path.replace(".txt", "_thought_process.txt"), "w", encoding="utf-8") as f:
+            f.write(response.thinking or "No thought process returned.")
 
     print(f"Response time: {(response.total_duration)/1e9/60:.2f} minutes")
     print(f"Actual Input tokens: {response.prompt_eval_count}")

@@ -75,6 +75,11 @@ def note_taker_pipeline(args: Namespace):
     if args.start_time:
         meeting_start_time = args.start_time
         print(f"Using provided start time: {meeting_start_time}")
+    else:
+        import datetime
+        # Set meeting start time to midnight on a standard day (e.g., Jan 1, 2020)
+        meeting_start_time = datetime.datetime(2020, 1, 1, 0, 0, 0)
+        print(f"No start time provided. Using default: {meeting_start_time}")
 
     # === 2. Convert and process audio files ===
     print("Processing folder of audio files...")

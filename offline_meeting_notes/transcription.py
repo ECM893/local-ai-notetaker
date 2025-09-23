@@ -10,7 +10,7 @@ import whisperx
 
 def transcribe_audio_multi(
     wav_files,
-    meeting_start_time: datetime = None,
+    meeting_start_time: datetime | None = None,
     model_size: str = "turbo",
 ):
     """
@@ -114,7 +114,7 @@ def interleave_transcripts(transcriptions: dict[str, list[dict]]) -> list[dict]:
     return all_segments
 
 def save_transcript_to_file(
-    segments: list[dict], output_file: str, pickle_bool: bool = False, start_time: datetime = None
+    segments: list[dict], output_file: str, pickle_bool: bool = False, start_time: datetime | None = None
 ):
     """
     Save transcript segments to a text file and optionally as a pickle.
