@@ -1,8 +1,8 @@
-from ast import pattern
-from datetime import datetime
+import argparse
 import os
 import re
-import argparse
+from ast import pattern
+from datetime import datetime
 
 
 def validate_args(args: argparse.Namespace, parser: argparse.ArgumentParser):
@@ -16,7 +16,9 @@ def validate_args(args: argparse.Namespace, parser: argparse.ArgumentParser):
         args.meeting_folder = os.path.normpath(args.meeting_folder)
 
         if not os.path.isdir(args.meeting_folder):
-            parser.error(f"Meeting folder does not exist: {args.meeting_folder}")
+            parser.error(
+                f"Meeting folder does not exist: {args.meeting_folder}"
+            )
 
         # If no Start time given, try to extract from folder name
         if not args.start_time:
@@ -31,7 +33,9 @@ def validate_args(args: argparse.Namespace, parser: argparse.ArgumentParser):
         os.makedirs(args.output_folder, exist_ok=True)
 
     if args.pyannotate_hf_token and args.audio_folder:
-        print("Warning: pyannotate_hf_token is set and audio_folder is provided")
+        print(
+            "Warning: pyannotate_hf_token is set and audio_folder is provided"
+        )
         print(
             "Warning: pyannotate is only used for single audio file and will be skipped"
         )
@@ -77,7 +81,9 @@ def get_meeting_start_time_from_folder_name(folder_name: str) -> datetime:
             meeting_start_time = datetime.strptime(
                 f"{date_str} {time_str}", "%Y-%m-%d %H.%M.%S"
             )
-            print(f"Extracted meeting start from filename: {meeting_start_time}")
+            print(
+                f"Extracted meeting start from filename: {meeting_start_time}"
+            )
         except ValueError:
             print(
                 "Failed to parse meeting start time.\n Expected Zoom layout like:\n 'YYYY-MM-DD HH.MM.SS <Speaker's Name>'s Zoom Meeting' \n falling back to file creation time"
@@ -90,4 +96,3 @@ def get_meeting_start_time_from_folder_name(folder_name: str) -> datetime:
         meeting_start_time = None
 
     return meeting_start_time
-

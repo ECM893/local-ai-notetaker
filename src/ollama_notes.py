@@ -1,5 +1,6 @@
-from typing import Literal
 import json
+from typing import Literal
+
 from ollama import generate
 
 SYS_PROMPT_JSON = """
@@ -112,6 +113,7 @@ def notes_json_to_markdown(data: dict) -> str:
 
     return "\n".join(lines)
 
+
 def ollama_api_notes(
     transcript_path: str,
     model: str,
@@ -124,7 +126,9 @@ def ollama_api_notes(
 
     prompt = USER_PROMPT_JSON.format(transcript=transcript)
 
-    approx_tokens = int((len(prompt) + len(SYS_PROMPT_JSON)) // 2.5)  # rough over-estimate of tokens
+    approx_tokens = int(
+        (len(prompt) + len(SYS_PROMPT_JSON)) // 2.5
+    )  # rough over-estimate of tokens
     print(f"Approximate tokens: {approx_tokens}")
     if approx_tokens > 128000:
         raise ValueError(
@@ -137,23 +141,29 @@ def ollama_api_notes(
         model=model,
         prompt=prompt,
         system=SYS_PROMPT_JSON,
-        think=think, # type: ignore
+        think=think,  # type: ignore
         options={"num_ctx": approx_tokens},
-    ) # type: ignore
+    )  # type: ignore
 
     # If save thought process is enabled, print out to file for debugging
     if save_thought_process:
-        with open(transcript_path.replace(".txt", "_thought_process.txt"), "w", encoding="utf-8") as f:
+        with open(
+            transcript_path.replace(".txt", "_thought_process.txt"),
+            "w",
+            encoding="utf-8",
+        ) as f:
             f.write(response.thinking or "No thought process returned.")
 
     print(f"Response time: {(response.total_duration)/1e9/60:.2f} minutes")
     print(f"Actual Input tokens: {response.prompt_eval_count}")
     if approx_tokens <= response.prompt_eval_count:
-        print("Warning: Approximate tokens was less than or equal to actual input tokens.")
+        print(
+            "Warning: Approximate tokens was less than or equal to actual input tokens."
+        )
         print("Consider Adjusting the Approximate tokens calculation.")
     print(f"Output tokens: {response.eval_count}")
 
-    resp_raw = response['response']
+    resp_raw = response["response"]
     resp_json = json.loads(resp_raw)
 
     resp_md = notes_json_to_markdown(resp_json)

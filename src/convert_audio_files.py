@@ -1,16 +1,20 @@
 import os
-import tempfile
-import subprocess
-from datetime import datetime, timedelta
 import re
-import numpy as np
+import subprocess
+import tempfile
+from datetime import datetime, timedelta
 from pathlib import Path
 
-def convert_audio_files(meeting_folder_path: str) -> tuple[dict, datetime, str]:
+import numpy as np
+
+
+def convert_audio_files(meeting_folder_path: str) -> None:
 
     print("Analyzing audio files folder:", meeting_folder_path)
     if not os.path.isdir(meeting_folder_path):
-        raise NotADirectoryError(f"{meeting_folder_path} is not a valid directory.")
+        raise NotADirectoryError(
+            f"{meeting_folder_path} is not a valid directory."
+        )
 
     # Step into first folder and collect audio files that end in .m4a
     master_audio_m4a = [
@@ -48,7 +52,9 @@ def convert_audio_files(meeting_folder_path: str) -> tuple[dict, datetime, str]:
         if f.lower().endswith((".m4a"))
     ]
     if not audio_files:
-        raise FileNotFoundError("No audio files found in the Audio Record folder.")
+        raise FileNotFoundError(
+            "No audio files found in the Audio Record folder."
+        )
 
     missing_wav_files = [
         f for f in audio_files if not os.path.exists(f.replace(".m4a", ".wav"))
@@ -69,7 +75,7 @@ def convert_audio_files(meeting_folder_path: str) -> tuple[dict, datetime, str]:
         print("All audio files already converted to .wav")
 
 
-def get_creation_time(file_path: str) -> datetime:
+def get_creation_time(file_path: str) -> datetime | None:
     """
     Extract the creation time of an audio file using ffmpeg.
 
@@ -105,7 +111,9 @@ def get_creation_time(file_path: str) -> datetime:
         return None
 
     # Convert to datetime and adjust to ET
-    creation_time = datetime.fromisoformat(creation_time_str.replace("Z", "+00:00"))
+    creation_time = datetime.fromisoformat(
+        creation_time_str.replace("Z", "+00:00")
+    )
     return creation_time - timedelta(hours=4)  # Convert UTC to ET
 
 
@@ -126,7 +134,9 @@ def convert_to_wav(file_path: str, output_folder: str) -> str:
         Path to the created .wav file.
     """
     wav_file = (
-        os.path.basename(file_path).replace(".m4a", ".wav").replace(".mp3", ".wav")
+        os.path.basename(file_path)
+        .replace(".m4a", ".wav")
+        .replace(".mp3", ".wav")
     )
     output_path = os.path.join(output_folder, wav_file)
     subprocess.run(
@@ -202,7 +212,9 @@ def check_converted_files(expected_files: list) -> list[str]:
     return missing_files
 
 
-def get_unconverted_audio_files(audio_files: list, converted_folder: str) -> list[str]:
+def get_unconverted_audio_files(
+    audio_files: list, converted_folder: str
+) -> list[str]:
     """
     Get a list of audio files that have not been converted.
 
@@ -310,14 +322,12 @@ def get_recordings_dict(wave_files: list) -> bool:
     """Check folder for split recordings"""
     # Pattern is the literal 'audio' followed by '<name>' '<recording number(single digit)> '<duplicate number(single digit)>' '<9 digit magic number>'
     # The name can be numbers letters and dots
-    pattern = (
-        r"(?i)audio(?P<name>.+?)(?P<recording>\d)(?P<duplicate>\d)(?P<magic>\d{9})\.wav"
-    )
+    pattern = r"(?i)audio(?P<name>.+?)(?P<recording>\d)(?P<duplicate>\d)(?P<magic>\d{9})\.wav"
     pattern = re.compile(pattern)
 
     wav_dict = {}
 
-    # This might work, but sorting by the duplicate number 
+    # This might work, but sorting by the duplicate number
     wave_files.sort()  # Sort to ensure consistent order
 
     for file in wave_files:
@@ -347,7 +357,9 @@ def combine_audio_files(wav_list: list) -> dict:
     # If wav_dict has only single entries per name and dpulcate, return original list
     if all(len(duplicates) == 1 for duplicates in wav_dict.values()):
         print("No split recordings detected, using original audio files.")
-        return {name: files[next(iter(files))] for name, files in wav_dict.items()}
+        return {
+            name: files[next(iter(files))] for name, files in wav_dict.items()
+        }
 
     else:
         print("Split recordings detected, combining audio files...")
@@ -358,14 +370,20 @@ def combine_audio_files(wav_list: list) -> dict:
 
         for name, files in wav_dict.items():
             # Combine the audio files for this speaker
-            combined_file_path = os.path.join(combine_folder, f"audio{name}_combined.wav")
+            combined_file_path = os.path.join(
+                combine_folder, f"audio{name}_combined.wav"
+            )
             wav_dict_new[name] = combined_file_path
             if not os.path.exists(combined_file_path):
                 print(f"Combining audio files for speaker: {name}")
-                files_list = [files[k] for k in sorted(files.keys())]  # Sort by duplicate number         
+                files_list = [
+                    files[k] for k in sorted(files.keys())
+                ]  # Sort by duplicate number
                 concat_wavs_copy(files_list, combined_file_path)
             else:
-                print(f"Combined file already exists, skipping: {combined_file_path}")
+                print(
+                    f"Combined file already exists, skipping: {combined_file_path}"
+                )
 
         return wav_dict_new
 
@@ -378,22 +396,34 @@ def concat_wavs_copy(wavs: list[str | Path], out_path: str | Path) -> Path:
         # simply copy the file
         subprocess.run(["cp", str(wavs[0]), str(out_path)], check=True)
 
-
     # write the concat list in order
-    tf = tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8", newline="\n")
+    tf = tempfile.NamedTemporaryFile(
+        "w", suffix=".txt", delete=False, encoding="utf-8", newline="\n"
+    )
     try:
         for p in wavs:
             tf.write(f"file '{p.as_posix()}'\n")
         tf.flush()
         tf.close()
 
-        subprocess.run([
-            "ffmpeg", "-y",
-            "-f", "concat", "-safe", "0",
-            "-i", tf.name,
-            "-c", "copy",
-            str(out_path)
-        ], check=True)
+        subprocess.run(
+            [
+                "ffmpeg",
+                "-y",
+                "-f",
+                "concat",
+                "-safe",
+                "0",
+                "-i",
+                tf.name,
+                "-c",
+                "copy",
+                str(out_path),
+            ],
+            check=True,
+        )
     finally:
-        try: os.unlink(tf.name)
-        except OSError: pass
+        try:
+            os.unlink(tf.name)
+        except OSError:
+            pass

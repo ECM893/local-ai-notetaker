@@ -32,19 +32,20 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 
-# Local imports
-from .transcription import (
-    transcribe_audio_multi,
-    interleave_transcripts,
-    save_transcript_to_file,
-)
 from .convert_audio_files import (
-    convert_audio_files,
-    combine_audio_files,
-    gather_wave_files,
     align_audio_file_offsets,
+    combine_audio_files,
+    convert_audio_files,
+    gather_wave_files,
 )
 from .ollama_notes import ollama_api_notes
+
+# Local imports
+from .transcription import (
+    interleave_transcripts,
+    save_transcript_to_file,
+    transcribe_audio_multi,
+)
 
 
 def note_taker_pipeline(args: Namespace):
@@ -77,6 +78,7 @@ def note_taker_pipeline(args: Namespace):
         print(f"Using provided start time: {meeting_start_time}")
     else:
         import datetime
+
         # Set meeting start time to midnight on a standard day (e.g., Jan 1, 2020)
         meeting_start_time = datetime.datetime(2020, 1, 1, 0, 0, 0)
         print(f"No start time provided. Using default: {meeting_start_time}")
@@ -94,7 +96,9 @@ def note_taker_pipeline(args: Namespace):
     adjust_offsets = False
     if adjust_offsets:
         # FIXME: Currnetly No need for this when using Zoom Recordings, expanded functionality can use this in the future
-        raise NotImplementedError("Offset adjustment not implemented for Zoom recordings.")
+        raise NotImplementedError(
+            "Offset adjustment not implemented for Zoom recordings."
+        )
         master_audio_wav = None
         offsets = align_audio_file_offsets(wav_files, master_audio_wav)
         print(f"Calculated audio offsets: {offsets}")
@@ -109,7 +113,8 @@ def note_taker_pipeline(args: Namespace):
         f"transcript_{meeting_start_time.strftime('%Y%m%d_%H%M')}.txt",
     )
     output_notes_filename = os.path.join(
-        args.output_folder, f"notes_{meeting_start_time.strftime('%Y%m%d_%H%M')}.md"
+        args.output_folder,
+        f"notes_{meeting_start_time.strftime('%Y%m%d_%H%M')}.md",
     )
 
     # === 5. Transcribe audio files (Whisper) ===
@@ -127,7 +132,9 @@ def note_taker_pipeline(args: Namespace):
             start_time=meeting_start_time,
         )
     else:
-        print(f"Transcript already exists at {output_transcript_filename} and overwrite is not enabled.")
+        print(
+            f"Transcript already exists at {output_transcript_filename} and overwrite is not enabled."
+        )
         print("Continuing to generate notes.")
 
     # === 6. Generate meeting notes (Ollama API) ===
@@ -138,7 +145,9 @@ def note_taker_pipeline(args: Namespace):
         )
     else:
         # FIXME: Implement non-ollama local model inference here.
-        raise NotImplementedError("Only ollama Server method currently validated")
+        raise NotImplementedError(
+            "Only ollama Server method currently validated"
+        )
 
     print("\nGenerated Meeting Notes\n")
 

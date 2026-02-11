@@ -1,5 +1,6 @@
 import argparse
 import shutil
+
 from .tools.validate_inputs import validate_args
 
 
@@ -84,10 +85,13 @@ def main():
 
     # Ensure ffmpeg is installed for audio processing
     if shutil.which("ffmpeg") is None:
-        parser.error("ffmpeg is required but not found in PATH. Please install ffmpeg.")
+        parser.error(
+            "ffmpeg is required but not found in PATH. Please install ffmpeg."
+        )
 
     if args:
         from .note_taker_pipeline import note_taker_pipeline
+
         note_taker_pipeline(args)
 
 

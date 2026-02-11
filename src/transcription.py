@@ -1,12 +1,14 @@
 """
-Transcription utilities using WhisperX for multiple single speaker audio files. 
+Transcription utilities using WhisperX for multiple single speaker audio files.
 Multi-speaker audio files (diarization) not yet implemented.
 """
 
-from datetime import datetime, timedelta
 import pickle
+from datetime import datetime, timedelta
+
 import torch
 import whisperx
+
 
 def transcribe_audio_multi(
     wav_files,
@@ -35,7 +37,9 @@ def transcribe_audio_multi(
 
     if meeting_start_time is None:
         # set to midnight today
-        meeting_start_time = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        meeting_start_time = datetime.now().replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
 
     transcriptions = {}
     batch_size = 16
@@ -44,7 +48,9 @@ def transcribe_audio_multi(
 
     print("Loading WhisperX model...")
     model = whisperx.load_model(model_size, device, compute_type=compute_type)
-    model_a, metadata = whisperx.load_align_model(language_code='en', device=device)
+    model_a, metadata = whisperx.load_align_model(
+        language_code="en", device=device
+    )
 
     print(f"Loading model to device: {device}")
 
@@ -55,15 +61,25 @@ def transcribe_audio_multi(
         result = model.transcribe(audio, batch_size=batch_size)
 
         if result["language"] != "en":
-            raise ValueError("Currently only English language is supported for this pipeline, literally just change the whisperx.load_align_model(language_code='en') above this code to fix.")
-        result = whisperx.align(result["segments"], model_a, metadata, audio, device, return_char_alignments=False)
-
+            raise ValueError(
+                "Currently only English language is supported for this pipeline, literally just change the whisperx.load_align_model(language_code='en') above this code to fix."
+            )
+        result = whisperx.align(
+            result["segments"],
+            model_a,
+            metadata,
+            audio,
+            device,
+            return_char_alignments=False,
+        )
 
         segments = []
         for seg in result.get("segments", []):
             # meeting starttime is a datetime object, and i want this to be displayed in the hour:minute format
             if meeting_start_time:
-                seg["start"] = meeting_start_time + timedelta(seconds=seg["start"])
+                seg["start"] = meeting_start_time + timedelta(
+                    seconds=seg["start"]
+                )
                 seg["end"] = meeting_start_time + timedelta(seconds=seg["end"])
 
             segments.append(
@@ -113,8 +129,12 @@ def interleave_transcripts(transcriptions: dict[str, list[dict]]) -> list[dict]:
     all_segments.sort(key=lambda x: x["start"])
     return all_segments
 
+
 def save_transcript_to_file(
-    segments: list[dict], output_file: str, pickle_bool: bool = False, start_time: datetime | None = None
+    segments: list[dict],
+    output_file: str,
+    pickle_bool: bool = False,
+    start_time: datetime | None = None,
 ):
     """
     Save transcript segments to a text file and optionally as a pickle.
@@ -140,7 +160,9 @@ def save_transcript_to_file(
         print(f"Pickled transcript saved to {output_file_pickle}")
 
     with open(output_file, "w", encoding="utf-8") as f:
-        f.write(f"Meeting Start Date and Time: {start_time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write(
+            f"Meeting Start Date and Time: {start_time.strftime('%Y-%m-%d %H:%M:%S')}\n"
+        )
         for seg in segments:
             start_time = (
                 seg["start"].strftime("%H:%M:%S")
@@ -152,5 +174,7 @@ def save_transcript_to_file(
                 if isinstance(seg["end"], datetime)
                 else str(timedelta(seconds=seg["end"]))
             )
-            f.write(f"[{start_time} - {end_time}] ({seg['speaker']}) {seg['text']}\n")
+            f.write(
+                f"[{start_time} - {end_time}] ({seg['speaker']}) {seg['text']}\n"
+            )
     print(f"Text transcript saved to {output_file}")

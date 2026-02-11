@@ -1,5 +1,6 @@
 import argparse
 import sys
+
 import torch
 
 
@@ -16,17 +17,23 @@ def load_whisper(model_size: str) -> str:
 
     return f"Whisper '{model_size}' loaded on device: {device}"
 
-def load_whisperx(model_size:str) -> str:
+
+def load_whisperx(model_size: str) -> str:
     import whisperx
+
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    compute_type = "float16" # change to "int8" if low on GPU mem (may reduce accuracy)
+    compute_type = (
+        "float16"  # change to "int8" if low on GPU mem (may reduce accuracy)
+    )
 
     # 1. Transcribe with original whisper (batched)
     model = whisperx.load_model(model_size, device, compute_type=compute_type)
     return f"WhisperX '{model_size}' loaded on device: {device} with compute_type: {compute_type}"
 
 
-def load_text_gen(model_id: str, test_prompt: str = "Say hello.") -> tuple[str, str]:
+def load_text_gen(
+    model_id: str, test_prompt: str = "Say hello."
+) -> tuple[str, str]:
     try:
         from transformers import pipeline
     except Exception as e:
