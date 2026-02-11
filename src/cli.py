@@ -39,10 +39,10 @@ def main():
         help="Hugging Face token for pyannote (required for diarization).",
     )
     parser.add_argument(
-        "-w",
-        "--whisper-model",
-        default="turbo",
-        help="Whisper model size (e.g., tiny, base, small, medium, large, turbo).",
+        "-m",
+        "--asr-model",
+        default="parakeet-tdt-0.6b-v2",
+        help="ASR model name (e.g., parakeet-tdt-0.6b-v2, parakeet-tdt-1.1b).",
     )
     parser.add_argument(
         "-l",

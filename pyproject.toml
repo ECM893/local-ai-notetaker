@@ -1,20 +1,18 @@
 [project]
-requires-python = ">=3.11,<3.14"
+requires-python = "==3.12.12"
 name = "offline_meeting_notes"
 version = "0.1.0"
-description = "Offline meeting notetaker using pyannote.audio, Whisper, and transformers."
+description = "Offline meeting notetaker using NeMo Parakeet ASR and transformers."
 readme = "README.md"
 dependencies = [
     "pyannote.audio",
-    "openai-whisper",
+    "nemo_toolkit[asr]",
     "transformers",
     "pytest",
     "accelerate",
-    "triton==3.4",
+    # "triton==3.4",
     "kernels",
     "pypandoc",
-    "whisperx",
-    "librosa",
     "scipy",
     "numpy",
     "ollama",
@@ -35,10 +33,12 @@ name = "pytorch-cu130"
 url = "https://download.pytorch.org/whl/cu130"
 explicit = true
 
-[project.scripts]
-offline-meeting-notes = "src.cli:main"
 
-[build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+
+# [project.scripts]
+# offline-meeting-notes = "src.cli:main"
+
+# [build-system]
+# requires = ["setuptools", "wheel"]
+# build-backend = "setuptools.build_meta"
 

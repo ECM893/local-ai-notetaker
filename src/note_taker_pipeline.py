@@ -16,7 +16,7 @@ Requirements:
     - Audio files organized by speaker
     - Meeting start time
     - Output folder for results
-    - Whisper and Ollama models available
+    - Parakeet-TDT and Ollama models available
 """
 
 # Standard library imports
@@ -64,7 +64,7 @@ def note_taker_pipeline(args: Namespace):
             - meeting_folder (str): Path to the meeting folder
             - output_folder (str): Path to save the output files
             - start_time (datetime, optional): Start time of the meeting
-            - whisper_model (str): Whisper model size to use
+            - asr_model (str): ASR model name to use (e.g., parakeet-tdt-0.6b-v2)
             - language_model (str): Language model to use for notes generation
             - ollama_api (bool): Whether to use Ollama API for notes generation
             - overwrite (bool): Whether to overwrite existing transcript files
@@ -117,12 +117,12 @@ def note_taker_pipeline(args: Namespace):
         f"notes_{meeting_start_time.strftime('%Y%m%d_%H%M')}.md",
     )
 
-    # === 5. Transcribe audio files (Whisper) ===
+    # === 5. Transcribe audio files (Parakeet-TDT) ===
     if not os.path.exists(output_transcript_filename) or args.overwrite:
         transcriptions = transcribe_audio_multi(
             wav_files=wav_files,
             meeting_start_time=meeting_start_time,
-            model_size=args.whisper_model,
+            model_size=args.asr_model,
         )
         interleaved_transcript = interleave_transcripts(transcriptions)
         # transcripts are lists of dicts with keys: start, end, text, speaker

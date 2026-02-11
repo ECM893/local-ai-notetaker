@@ -4,31 +4,18 @@ import sys
 import torch
 
 
-def load_whisper(model_size: str) -> str:
+def load_parakeet(model_size: str) -> str:
     try:
-        import whisper
+        import nemo.collections.asr as nemo_asr
     except ImportError as e:
-        return f"Whisper not installed: {e}"
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = whisper.load_model(model_size)
-
-    model.to(device)
-
-    return f"Whisper '{model_size}' loaded on device: {device}"
-
-
-def load_whisperx(model_size: str) -> str:
-    import whisperx
+        return f"NeMo ASR not installed: {e}"
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    compute_type = (
-        "float16"  # change to "int8" if low on GPU mem (may reduce accuracy)
+    asr_model = nemo_asr.models.ASRModel.from_pretrained(
+        model_name=f"nvidia/{model_size}"
     )
 
-    # 1. Transcribe with original whisper (batched)
-    model = whisperx.load_model(model_size, device, compute_type=compute_type)
-    return f"WhisperX '{model_size}' loaded on device: {device} with compute_type: {compute_type}"
+    return f"Parakeet '{model_size}' loaded on device: {device}"
 
 
 def load_text_gen(
@@ -80,16 +67,10 @@ def main(argv=None):
         help="Transformers model id for text-generation (e.g., openai/gpt-oss-20b)",
     )
     parser.add_argument(
-        "-w",
-        "--whisper-model",
+        "-m",
+        "--asr-model",
         default=None,
-        help="Whisper model size (e.g., tiny, base, small, medium, large, turbo)",
-    )
-    parser.add_argument(
-        "-x",
-        "--whisperx-model",
-        default=None,
-        help="WhisperX model size (e.g., tiny, base, small, medium, large, turbo)",
+        help="Parakeet-TDT model size (e.g., parakeet-tdt-0.6b-v2, parakeet-tdt-1.1b)",
     )
     parser.add_argument(
         "-t",
@@ -100,9 +81,9 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     # Require at least one model to be specified
-    if not (args.gpt_model or args.whisper_model or args.pyannote_hf_token):
+    if not (args.gpt_model or args.asr_model or args.pyannote_hf_token):
         parser.error(
-            "Specify at least one of --gpt-model, --whisper-model, or --pyannote-hf-token to load."
+            "Specify at least one of --gpt-model, --asr-model, or --pyannote-hf-token to load."
         )
 
     print("Torch:", torch.__version__)
@@ -113,13 +94,9 @@ def main(argv=None):
         except Exception:
             pass
 
-    # Load Whisper if requested
-    if args.whisper_model:
-        print(load_whisper(args.whisper_model))
-
-    # Load WhisperX if requested
-    if args.whisperx_model:
-        print(load_whisperx(args.whisperx_model))
+    # Load Parakeet-TDT if requested
+    if args.asr_model:
+        print(load_parakeet(args.asr_model))
 
     # Load text-generation model and generate a short hello
     if args.gpt_model:

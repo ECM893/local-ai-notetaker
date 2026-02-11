@@ -1,7 +1,6 @@
 import argparse
 import os
 import re
-from ast import pattern
 from datetime import datetime
 
 
@@ -40,21 +39,13 @@ def validate_args(args: argparse.Namespace, parser: argparse.ArgumentParser):
             "Warning: pyannotate is only used for single audio file and will be skipped"
         )
 
-    whisper_models = (
-        "tiny",
-        "base",
-        "small",
-        "medium",
-        "large",
-        "turbo",
-        "tiny.en",
-        "small.en",
-        "medium.en",
-        "base.en",
+    asr_models = (
+        "parakeet-tdt-0.6b-v2",
+        "parakeet-tdt-1.1b",
     )
-    if args.whisper_model not in whisper_models:
+    if args.asr_model not in asr_models:
         parser.error(
-            f"Invalid whisper model: {args.whisper_model}. Choose from {whisper_models}"
+            f"Invalid ASR model: {args.asr_model}. Choose from {asr_models}"
         )
 
     if args.ollama_api == "True":
