@@ -3,6 +3,10 @@ import sys
 
 import torch
 
+from lain.tools.log import log
+
+_STAGE = "Preload"
+
 
 def load_parakeet(model_size: str) -> str:
     try:
@@ -86,31 +90,30 @@ def main(argv=None):
             "Specify at least one of --gpt-model, --asr-model, or --pyannote-hf-token to load."
         )
 
-    print("Torch:", torch.__version__)
-    print("CUDA available:", torch.cuda.is_available())
+    log(_STAGE, f"Torch: {torch.__version__}")
+    log(_STAGE, f"CUDA available: {torch.cuda.is_available()}")
     if torch.cuda.is_available():
         try:
-            print("CUDA device:", torch.cuda.get_device_name(0))
+            log(_STAGE, f"CUDA device: {torch.cuda.get_device_name(0)}")
         except Exception:
             pass
 
     # Load Parakeet-TDT if requested
     if args.asr_model:
-        print(load_parakeet(args.asr_model))
+        log(_STAGE, load_parakeet(args.asr_model))
 
     # Load text-generation model and generate a short hello
     if args.gpt_model:
         status, hello = load_text_gen(
             args.gpt_model, test_prompt="Say 'hello' briefly."
         )
-        print(status)
+        log(_STAGE, status)
         if hello:
-            print("Model output:")
-            print(hello)
+            log(_STAGE, f"Model output: {hello}")
 
     # Optionally try diarizer
     if args.pyannote_hf_token:
-        print(load_diarizer(args.pyannote_hf_token))
+        log(_STAGE, load_diarizer(args.pyannote_hf_token))
 
 
 if __name__ == "__main__":

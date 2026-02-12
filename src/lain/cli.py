@@ -1,7 +1,7 @@
 import argparse
 import shutil
 
-from .tools.validate_inputs import validate_args
+from lain.tools.validate_inputs import validate_args
 
 
 def main():
@@ -53,8 +53,8 @@ def main():
     parser.add_argument(
         "-o",
         "--output-folder",
-        help="Output folder to save transcript and notes (default: output/).",
-        default="offline_meeting_notes/output/",
+        help="Output folder to save transcript and notes (default: Transcripts/<meeting-folder-name>/).",
+        default=None,
     )
     parser.add_argument(
         "-s",
@@ -90,7 +90,7 @@ def main():
         )
 
     if args:
-        from .note_taker_pipeline import note_taker_pipeline
+        from lain.note_taker_pipeline import note_taker_pipeline
 
         note_taker_pipeline(args)
 

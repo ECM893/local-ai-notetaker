@@ -7,7 +7,12 @@ Multi-speaker audio files (diarization) not yet implemented.
 import pickle
 from datetime import datetime, timedelta
 
+import nemo.collections.asr as nemo_asr
 import torch
+
+from lain.tools.log import log
+
+_STAGE = "Transcribe"
 
 
 def _load_vad_model():
@@ -23,7 +28,9 @@ def _load_vad_model():
     return vad_model, get_speech_timestamps, read_audio
 
 
-def _has_speech(file_path, vad_model, get_speech_timestamps, read_audio, threshold=0.5):
+def _has_speech(
+    file_path, vad_model, get_speech_timestamps, read_audio, threshold=0.5
+):
     """
     Check if an audio file contains speech using Silero VAD.
 
@@ -78,7 +85,6 @@ def transcribe_audio_multi(
     dict of str to list of dict
         Mapping from speaker labels to lists of segment dictionaries.
     """
-    import nemo.collections.asr as nemo_asr
 
     if meeting_start_time is None:
         meeting_start_time = datetime.now().replace(
@@ -89,11 +95,11 @@ def transcribe_audio_multi(
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # Load Silero VAD for silence detection
-    print("Loading Silero VAD model...")
+    log(_STAGE, "Loading Silero VAD model...")
     vad_model, get_speech_timestamps, read_audio = _load_vad_model()
 
     # Load Parakeet-TDT model
-    print(f"Loading Parakeet-TDT model: {model_size}...")
+    log(_STAGE, f"Loading Parakeet-TDT model: {model_size}")
     asr_model = nemo_asr.models.ASRModel.from_pretrained(
         model_name=f"nvidia/{model_size}"
     )
@@ -102,19 +108,18 @@ def transcribe_audio_multi(
     asr_model.change_attention_model("rel_pos_local_attn", [128, 128])
     asr_model.change_subsampling_conv_chunking_factor(1)
 
-    print(f"Model loaded on device: {device}")
-    print("Starting Parakeet-TDT transcription...")
+    log(_STAGE, f"Model loaded on device: {device}")
 
     for speaker, file in wav_files.items():
-        print(f"Checking audio for {speaker}...")
+        log(_STAGE, f"Checking audio for {speaker}...")
 
         # Silence detection: skip files with no speech
         if not _has_speech(file, vad_model, get_speech_timestamps, read_audio):
-            print(f"  No speech detected for {speaker}, skipping.")
+            log(_STAGE, f"No speech detected for {speaker}, skipping")
             transcriptions[speaker] = []
             continue
 
-        print(f"  Transcribing audio for {speaker}...")
+        log(_STAGE, f"Transcribing audio for {speaker}...")
         output = asr_model.transcribe([file], timestamps=True)
 
         segments = []
@@ -123,7 +128,9 @@ def transcribe_audio_multi(
             end_seconds = seg["end"]
 
             if meeting_start_time:
-                seg_start = meeting_start_time + timedelta(seconds=start_seconds)
+                seg_start = meeting_start_time + timedelta(
+                    seconds=start_seconds
+                )
                 seg_end = meeting_start_time + timedelta(seconds=end_seconds)
             else:
                 seg_start = start_seconds
@@ -180,8 +187,8 @@ def interleave_transcripts(transcriptions: dict[str, list[dict]]) -> list[dict]:
 def save_transcript_to_file(
     segments: list[dict],
     output_file: str,
+    start_time: datetime,
     pickle_bool: bool = False,
-    start_time: datetime | None = None,
 ):
     """
     Save transcript segments to a text file and optionally as a pickle.
@@ -204,24 +211,24 @@ def save_transcript_to_file(
         output_file_pickle = output_file.replace(".txt", ".pkl")
         with open(output_file_pickle, "wb") as f:
             pickle.dump(segments, f)
-        print(f"Pickled transcript saved to {output_file_pickle}")
+        log(_STAGE, f"Pickled transcript saved to {output_file_pickle}")
 
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(
             f"Meeting Start Date and Time: {start_time.strftime('%Y-%m-%d %H:%M:%S')}\n"
         )
         for seg in segments:
-            start_time = (
+            start_time_print = (
                 seg["start"].strftime("%H:%M:%S")
                 if isinstance(seg["start"], datetime)
                 else str(timedelta(seconds=seg["start"]))
             )
-            end_time = (
+            end_time_print = (
                 seg["end"].strftime("%H:%M:%S")
                 if isinstance(seg["end"], datetime)
                 else str(timedelta(seconds=seg["end"]))
             )
             f.write(
-                f"[{start_time} - {end_time}] ({seg['speaker']}) {seg['text']}\n"
+                f"[{start_time_print} - {end_time_print}] ({seg['speaker']}) {seg['text']}\n"
             )
-    print(f"Text transcript saved to {output_file}")
+    log(_STAGE, f"Transcript saved to {output_file}")

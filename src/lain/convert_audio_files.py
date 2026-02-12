@@ -7,10 +7,14 @@ from pathlib import Path
 
 import numpy as np
 
+from lain.tools.log import log
+
+_STAGE = "Audio"
+
 
 def convert_audio_files(meeting_folder_path: str) -> None:
 
-    print("Analyzing audio files folder:", meeting_folder_path)
+    log(_STAGE, f"Analyzing folder: {meeting_folder_path}")
     if not os.path.isdir(meeting_folder_path):
         raise NotADirectoryError(
             f"{meeting_folder_path} is not a valid directory."
@@ -26,18 +30,21 @@ def convert_audio_files(meeting_folder_path: str) -> None:
     master_audio_wav = [f.replace(".m4a", ".wav") for f in master_audio_m4a]
     missing_wav_files = [f for f in master_audio_wav if not os.path.exists(f)]
     if missing_wav_files:
-        print("Converting master audio files to .wav:")
+        log(_STAGE, "Converting master audio files to .wav")
         for f in missing_wav_files:
-            print(f" - {f}")
+            log(_STAGE, f"  Converting: {f}")
             subprocess.run(
-                ["ffmpeg", "-i", f.replace(".wav", ".m4a"), f],
+                [
+                    "ffmpeg", "-i", f.replace(".wav", ".m4a"),
+                    "-ac", "1", "-ar", "16000", f,
+                ],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
                 check=True,
             )
     else:
-        print("All master audio files already converted to .wav")
+        log(_STAGE, "All master audio files already converted to .wav")
 
     # Step into sub directory called "Audio Record" and collect audio files that end in .m4a
     audio_record_path = os.path.join(meeting_folder_path, "Audio Record")
@@ -61,18 +68,21 @@ def convert_audio_files(meeting_folder_path: str) -> None:
     ]
 
     if missing_wav_files:
-        print("Converting audio files to .wav:")
+        log(_STAGE, "Converting speaker audio files to .wav")
         for f in missing_wav_files:
-            print(f" - {f.replace('.m4a', '.wav')}")
+            log(_STAGE, f"  Converting: {f.replace('.m4a', '.wav')}")
             subprocess.run(
-                ["ffmpeg", "-i", f, f.replace(".m4a", ".wav")],
+                [
+                    "ffmpeg", "-i", f,
+                    "-ac", "1", "-ar", "16000", f.replace(".m4a", ".wav"),
+                ],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
                 check=True,
             )
     else:
-        print("All audio files already converted to .wav")
+        log(_STAGE, "All speaker audio files already converted to .wav")
 
 
 def get_creation_time(file_path: str) -> datetime | None:
@@ -107,7 +117,7 @@ def get_creation_time(file_path: str) -> datetime | None:
     )
     creation_time_str = result.stdout.strip()
     if not creation_time_str:
-        print(f"Warning: Creation time not found for file: {file_path}")
+        log(_STAGE, f"Warning: Creation time not found for file: {file_path}")
         return None
 
     # Convert to datetime and adjust to ET
@@ -146,7 +156,7 @@ def convert_to_wav(file_path: str, output_folder: str) -> str:
         text=True,
         check=True,
     )
-    print(f"Converted {file_path} to {output_path}")
+    log(_STAGE, f"Converted {file_path} to {output_path}")
     return output_path
 
 
@@ -206,9 +216,9 @@ def check_converted_files(expected_files: list) -> list[str]:
     """
     missing_files = [f for f in expected_files if not os.path.exists(f)]
     if missing_files:
-        print("Converting audio files to .wav:")
+        log(_STAGE, "Missing converted files:")
         for f in missing_files:
-            print(f" - {f}")
+            log(_STAGE, f"  {f}")
     return missing_files
 
 
@@ -246,12 +256,11 @@ def get_unconverted_audio_files(
     ]
 
     if unconverted_files:
-        print("Unconverted audio files found:")
-        print(f"Folder {os.path.dirname(audio_files[0])}")
+        log(_STAGE, f"Unconverted audio files in {os.path.dirname(audio_files[0])}:")
         for f in unconverted_files:
-            print(f" - {os.path.basename(f)}")
+            log(_STAGE, f"  {os.path.basename(f)}")
     else:
-        print("No unconverted audio files found.")
+        log(_STAGE, "No unconverted audio files found")
 
     return unconverted_files
 
@@ -277,7 +286,7 @@ def align_audio_file_offsets(
     import librosa
     from scipy.signal import correlate
 
-    print("Calculating audio file offsets...")
+    log(_STAGE, "Calculating audio file offsets...")
     offsets = {}
     for speaker, file in wav_files.items():
         y1, sr1 = librosa.load(master_audio_wav, sr=None)
@@ -311,8 +320,9 @@ def gather_wave_files(meeting_folder_path: str) -> list[str]:
             m4a_list.append(os.path.join(audio_record_folder, file))
 
     if len(m4a_list) != len(wave_list):
-        print(
-            "Warning: Number of .m4a files does not match number of .wav files in the audio record. Something may have gone wrong."
+        log(
+            _STAGE,
+            "Warning: .m4a count does not match .wav count in Audio Record. Something may have gone wrong",
         )
 
     return wave_list
@@ -356,13 +366,13 @@ def combine_audio_files(wav_list: list) -> dict:
 
     # If wav_dict has only single entries per name and dpulcate, return original list
     if all(len(duplicates) == 1 for duplicates in wav_dict.values()):
-        print("No split recordings detected, using original audio files.")
+        log(_STAGE, "No split recordings detected, using original audio files")
         return {
             name: files[next(iter(files))] for name, files in wav_dict.items()
         }
 
     else:
-        print("Split recordings detected, combining audio files...")
+        log(_STAGE, "Split recordings detected, combining audio files...")
         combine_folder = os.path.join(os.path.dirname(wav_list[0]), "Combined")
         os.makedirs(combine_folder, exist_ok=True)
 
@@ -375,15 +385,13 @@ def combine_audio_files(wav_list: list) -> dict:
             )
             wav_dict_new[name] = combined_file_path
             if not os.path.exists(combined_file_path):
-                print(f"Combining audio files for speaker: {name}")
+                log(_STAGE, f"Combining audio files for speaker: {name}")
                 files_list = [
                     files[k] for k in sorted(files.keys())
                 ]  # Sort by duplicate number
                 concat_wavs_copy(files_list, combined_file_path)
             else:
-                print(
-                    f"Combined file already exists, skipping: {combined_file_path}"
-                )
+                log(_STAGE, f"Combined file already exists, skipping: {combined_file_path}")
 
         return wav_dict_new
 

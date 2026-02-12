@@ -3,13 +3,17 @@ import os
 import re
 from datetime import datetime
 
+from lain.tools.log import log
+
+_STAGE = "Setup"
+
 
 def validate_args(args: argparse.Namespace, parser: argparse.ArgumentParser):
     args.start_time = (
         datetime.fromisoformat(args.start_time) if args.start_time else None
     )
     if args.start_time:
-        print(f"Using start time: {args.start_time}")
+        log(_STAGE, f"Using start time: {args.start_time}")
 
     if args.meeting_folder:
         args.meeting_folder = os.path.normpath(args.meeting_folder)
@@ -25,19 +29,24 @@ def validate_args(args: argparse.Namespace, parser: argparse.ArgumentParser):
                 args.meeting_folder
             )
             if args.start_time:
-                print(f"Using extracted start time: {args.start_time}")
+                log(_STAGE, f"Extracted start time: {args.start_time}")
 
-    if args.output_folder:
-        args.output_folder = os.path.normpath(args.output_folder)
-        os.makedirs(args.output_folder, exist_ok=True)
+    # Build output folder: default is Transcripts/<meeting-folder-name>/
+    # __file__ is src/lain/tools/validate_inputs.py → 4x dirname to reach project root
+    if args.output_folder is None and args.meeting_folder:
+        meeting_name = os.path.basename(args.meeting_folder)
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        args.output_folder = os.path.join(project_root, "Transcripts", meeting_name)
+    elif args.output_folder is None:
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        args.output_folder = os.path.join(project_root, "Transcripts")
+
+    args.output_folder = os.path.normpath(args.output_folder)
+    os.makedirs(args.output_folder, exist_ok=True)
 
     if args.pyannotate_hf_token and args.audio_folder:
-        print(
-            "Warning: pyannotate_hf_token is set and audio_folder is provided"
-        )
-        print(
-            "Warning: pyannotate is only used for single audio file and will be skipped"
-        )
+        log(_STAGE, "Warning: pyannotate_hf_token is set and audio_folder is provided")
+        log(_STAGE, "Warning: pyannotate is only used for single audio file and will be skipped")
 
     asr_models = (
         "parakeet-tdt-0.6b-v2",
@@ -72,17 +81,18 @@ def get_meeting_start_time_from_folder_name(folder_name: str) -> datetime:
             meeting_start_time = datetime.strptime(
                 f"{date_str} {time_str}", "%Y-%m-%d %H.%M.%S"
             )
-            print(
-                f"Extracted meeting start from filename: {meeting_start_time}"
-            )
         except ValueError:
-            print(
-                "Failed to parse meeting start time.\n Expected Zoom layout like:\n 'YYYY-MM-DD HH.MM.SS <Speaker's Name>'s Zoom Meeting' \n falling back to file creation time"
+            log(
+                _STAGE,
+                "Failed to parse meeting start time. Expected Zoom layout like: "
+                "'YYYY-MM-DD HH.MM.SS <Name>'s Zoom Meeting'. Falling back to file creation time",
             )
             meeting_start_time = None
     else:
-        print(
-            "Failed to extract meeting start time from folder name. Expected Zoom layout like:\n 'YYYY-MM-DD HH.MM.SS <Speaker's Name>'s Zoom Meeting' \n falling back to file creation time"
+        log(
+            _STAGE,
+            "Failed to extract start time from folder name. Expected Zoom layout like: "
+            "'YYYY-MM-DD HH.MM.SS <Name>'s Zoom Meeting'. Falling back to file creation time",
         )
         meeting_start_time = None
 

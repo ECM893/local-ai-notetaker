@@ -13,7 +13,7 @@ dist/
 *.egg-info/
 
 .vscode/
-offline_meeting_notes/output/*
-offline_meeting_notes/audio/*
+Transcripts/*
+recordings/*
 
 .gitattributes

@@ -19,33 +19,27 @@ Requirements:
     - Parakeet-TDT and Ollama models available
 """
 
-# Standard library imports
 import os
-import warnings
 from argparse import Namespace
 
-# Third-party imports
 import pypandoc
 
-# Suppress noisy warnings
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-warnings.filterwarnings("ignore", category=FutureWarning)
-warnings.filterwarnings("ignore", category=UserWarning)
+from lain.tools.log import log
 
-from .convert_audio_files import (
+from lain.convert_audio_files import (
     align_audio_file_offsets,
     combine_audio_files,
     convert_audio_files,
     gather_wave_files,
 )
-from .ollama_notes import ollama_api_notes
-
-# Local imports
-from .transcription import (
+from lain.ollama_notes import ollama_api_notes
+from lain.transcription import (
     interleave_transcripts,
     save_transcript_to_file,
     transcribe_audio_multi,
 )
+
+_STAGE = "Pipeline"
 
 
 def note_taker_pipeline(args: Namespace):
@@ -75,16 +69,16 @@ def note_taker_pipeline(args: Namespace):
     # === 1. Get meeting start time ===
     if args.start_time:
         meeting_start_time = args.start_time
-        print(f"Using provided start time: {meeting_start_time}")
+        log(_STAGE, f"Using provided start time: {meeting_start_time}")
     else:
         import datetime
 
         # Set meeting start time to midnight on a standard day (e.g., Jan 1, 2020)
         meeting_start_time = datetime.datetime(2020, 1, 1, 0, 0, 0)
-        print(f"No start time provided. Using default: {meeting_start_time}")
+        log(_STAGE, f"No start time provided, using default: {meeting_start_time}")
 
     # === 2. Convert and process audio files ===
-    print("Processing folder of audio files...")
+    log(_STAGE, "Processing folder of audio files...")
     convert_audio_files(args.meeting_folder)
 
     # === 3. Gather and combine WAV files ===
@@ -101,11 +95,11 @@ def note_taker_pipeline(args: Namespace):
         )
         master_audio_wav = None
         offsets = align_audio_file_offsets(wav_files, master_audio_wav)
-        print(f"Calculated audio offsets: {offsets}")
+        log(_STAGE, f"Calculated audio offsets: {offsets}")
 
-    print("Detected audio files:")
+    log(_STAGE, "Detected audio files:")
     for wav_file in wav_files:
-        print(wav_file)
+        log(_STAGE, f"  {wav_file}")
 
     # === 4. Prepare output filenames ===
     output_transcript_filename = os.path.join(
@@ -132,10 +126,8 @@ def note_taker_pipeline(args: Namespace):
             start_time=meeting_start_time,
         )
     else:
-        print(
-            f"Transcript already exists at {output_transcript_filename} and overwrite is not enabled."
-        )
-        print("Continuing to generate notes.")
+        log(_STAGE, f"Transcript already exists at {output_transcript_filename}, skipping transcription")
+        log(_STAGE, "Continuing to generate notes")
 
     # === 6. Generate meeting notes (Ollama API) ===
     if args.ollama_api:
@@ -149,15 +141,15 @@ def note_taker_pipeline(args: Namespace):
             "Only ollama Server method currently validated"
         )
 
-    print("\nGenerated Meeting Notes\n")
+    log(_STAGE, "Generated meeting notes")
 
     # === 7. Save notes to Markdown file ===
     with open(output_notes_filename, "w", encoding="utf-8") as f:
         f.write(notes)
-    print(f"\nMeeting notes saved to {output_notes_filename}")
+    log(_STAGE, f"Meeting notes saved to {output_notes_filename}")
 
-    # === 8. Convert Markdown notes to DOCX format ===
-    print("Converting Markdown notes to DOCX format...")
-    docx_path = output_notes_filename.replace(".md", ".docx")
-    pypandoc.convert_file(output_notes_filename, "docx", outputfile=docx_path)
-    print(f"DOCX meeting notes saved to {docx_path}")
+    # # === 8. Convert Markdown notes to DOCX format ===
+    # print("Converting Markdown notes to DOCX format...")
+    # docx_path = output_notes_filename.replace(".md", ".docx")
+    # pypandoc.convert_file(output_notes_filename, "docx", outputfile=docx_path)
+    # print(f"DOCX meeting notes saved to {docx_path}")

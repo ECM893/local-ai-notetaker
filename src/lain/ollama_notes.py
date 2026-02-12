@@ -1,50 +1,21 @@
 import json
+import os
+import re
 from typing import Literal
 
 from ollama import generate
 
-SYS_PROMPT_JSON = """
-You are a meeting notes structurer. Read the transcript and return ONLY JSON that matches this schema (no extra text):
-{
-    "header": {
-        "date": "YYYY-MM-DD",
-        "time": "HH:MM - HH:MM ET",
-        "attendees": ["Name", "Name"],
-        "subject": "Short subject"
-    },
-    "topics": [
-        {
-            "title": "Topic title",
-            "time_range": "HH:MM:SS - HH:MM:SS",
-            "bullets": ["Who: point", "Group: point"],
-            "conclusion": "One-sentence conclusion"
-        }
-    ],
-    "action_items": [
-        {
-            "owner": "Speaker name",
-            "items": [
-                {"description": "What to do", "deadline": "YYYY-MM-DD or null"}
-            ]
-        }
-    ],
-    "metanotes": ["Optional note", "..."]
-}
+from lain.tools.log import log
 
-Rules:
-- Use only information present in the transcript; do not invent details
-- Exclude side/personal conversations and off-topic content
-- If a field is unknown, use null or [] appropriately
-- Return valid JSON only (no Markdown, no prose)
-"""
+_STAGE = "Notes"
+_PROMPTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "prompts")
 
-USER_PROMPT_JSON = """Summarize the meeting transcript into the specified JSON schema.
-Return JSON only (no Markdown, no extra text).
 
-Transcript:
-
-{transcript}
-"""
+def _read_prompt(filename: str) -> str:
+    """Read a prompt template from the prompts/ directory."""
+    path = os.path.join(_PROMPTS_DIR, filename)
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
 
 
 def notes_json_to_markdown(data: dict) -> str:
@@ -124,12 +95,14 @@ def ollama_api_notes(
     with open(transcript_path, "r", encoding="utf-8") as f:
         transcript = f.read()
 
-    prompt = USER_PROMPT_JSON.format(transcript=transcript)
+    system_prompt = _read_prompt("system_prompt.txt")
+    user_prompt_template = _read_prompt("user_prompt.txt")
+    prompt = user_prompt_template.format(transcript=transcript)
 
     approx_tokens = int(
-        (len(prompt) + len(SYS_PROMPT_JSON)) // 2.5
+        (len(prompt) + len(system_prompt)) // 2.5
     )  # rough over-estimate of tokens
-    print(f"Approximate tokens: {approx_tokens}")
+    log(_STAGE, f"Approximate tokens: {approx_tokens}")
     if approx_tokens > 128000:
         raise ValueError(
             f"Transcript is too long ({approx_tokens} tokens). Please shorten the transcript."
@@ -137,12 +110,14 @@ def ollama_api_notes(
 
     # TODO: This is setup only for thinking models, should generalize inputs for other smaller models too
     # NOTE: Think parameter hasn't been give updated type hints in ollama package as of 2025-09-18
+    # num_ctx must cover input + thinking + output; use 4x input as a safe minimum
+    num_ctx = max(approx_tokens * 4, 8192)
     response = generate(
         model=model,
         prompt=prompt,
-        system=SYS_PROMPT_JSON,
+        system=system_prompt,
         think=think,  # type: ignore
-        options={"num_ctx": approx_tokens},
+        options={"num_ctx": num_ctx},
     )  # type: ignore
 
     # If save thought process is enabled, print out to file for debugging
@@ -154,19 +129,58 @@ def ollama_api_notes(
         ) as f:
             f.write(response.thinking or "No thought process returned.")
 
-    print(f"Response time: {(response.total_duration)/1e9/60:.2f} minutes")
-    print(f"Actual Input tokens: {response.prompt_eval_count}")
-    if approx_tokens <= response.prompt_eval_count:
-        print(
-            "Warning: Approximate tokens was less than or equal to actual input tokens."
-        )
-        print("Consider Adjusting the Approximate tokens calculation.")
-    print(f"Output tokens: {response.eval_count}")
+    if response.total_duration:
+        log(_STAGE, f"Response time: {response.total_duration / 1e9 / 60:.2f} minutes")
+    if response.prompt_eval_count:
+        log(_STAGE, f"Actual input tokens: {response.prompt_eval_count}")
+        if approx_tokens <= response.prompt_eval_count:
+            log(_STAGE, "Warning: Approximate tokens was less than or equal to actual input tokens")
+            log(_STAGE, "Consider adjusting the approximate tokens calculation")
+    if response.eval_count:
+        log(_STAGE, f"Output tokens: {response.eval_count}")
 
     resp_raw = response["response"]
-    resp_json = json.loads(resp_raw)
+
+    # Try to extract JSON from the response, handling common LLM output quirks
+    resp_json = _extract_json(resp_raw)
+
+    # If the response was empty, the model may have put JSON in the thinking block
+    if resp_json is None and response.thinking:
+        resp_json = _extract_json(response.thinking)
+
+    if resp_json is None:
+        raise ValueError(
+            f"Could not parse JSON from Ollama response. Raw response:\n{resp_raw!r}"
+        )
 
     resp_md = notes_json_to_markdown(resp_json)
 
     # This should always return a string in Markdown format
     return resp_md
+
+
+def _extract_json(text: str) -> dict | None:
+    """Extract a JSON object from text, handling markdown fences and surrounding prose."""
+    if not text or not text.strip():
+        return None
+
+    # Strip markdown code fences (```json ... ``` or ``` ... ```)
+    fence_match = re.search(r"```(?:json)?\s*\n?(.*?)```", text, re.DOTALL)
+    if fence_match:
+        text = fence_match.group(1).strip()
+
+    # Try parsing the full text as JSON
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # Try to find a JSON object ({...}) in the text
+    brace_match = re.search(r"\{.*\}", text, re.DOTALL)
+    if brace_match:
+        try:
+            return json.loads(brace_match.group(0))
+        except json.JSONDecodeError:
+            pass
+
+    return None
