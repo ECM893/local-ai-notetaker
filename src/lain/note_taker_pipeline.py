@@ -22,10 +22,6 @@ Requirements:
 import os
 from argparse import Namespace
 
-import pypandoc
-
-from lain.tools.log import log
-
 from lain.convert_audio_files import (
     align_audio_file_offsets,
     combine_audio_files,
@@ -33,11 +29,16 @@ from lain.convert_audio_files import (
     gather_wave_files,
 )
 from lain.ollama_notes import ollama_api_notes
+from lain.tools.log import log
 from lain.transcription import (
     interleave_transcripts,
     save_transcript_to_file,
     transcribe_audio_multi,
 )
+
+# import pypandoc
+
+
 
 _STAGE = "Pipeline"
 
@@ -75,7 +76,10 @@ def note_taker_pipeline(args: Namespace):
 
         # Set meeting start time to midnight on a standard day (e.g., Jan 1, 2020)
         meeting_start_time = datetime.datetime(2020, 1, 1, 0, 0, 0)
-        log(_STAGE, f"No start time provided, using default: {meeting_start_time}")
+        log(
+            _STAGE,
+            f"No start time provided, using default: {meeting_start_time}",
+        )
 
     # === 2. Convert and process audio files ===
     log(_STAGE, "Processing folder of audio files...")
@@ -126,7 +130,10 @@ def note_taker_pipeline(args: Namespace):
             start_time=meeting_start_time,
         )
     else:
-        log(_STAGE, f"Transcript already exists at {output_transcript_filename}, skipping transcription")
+        log(
+            _STAGE,
+            f"Transcript already exists at {output_transcript_filename}, skipping transcription",
+        )
         log(_STAGE, "Continuing to generate notes")
 
     # === 6. Generate meeting notes (Ollama API) ===

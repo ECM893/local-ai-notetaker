@@ -15,7 +15,7 @@ def load_parakeet(model_size: str) -> str:
         return f"NeMo ASR not installed: {e}"
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    asr_model = nemo_asr.models.ASRModel.from_pretrained(
+    _ = nemo_asr.models.ASRModel.from_pretrained(
         model_name=f"nvidia/{model_size}"
     )
 

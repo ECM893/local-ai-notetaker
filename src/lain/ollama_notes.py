@@ -8,7 +8,9 @@ from ollama import generate
 from lain.tools.log import log
 
 _STAGE = "Notes"
-_PROMPTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "prompts")
+_PROMPTS_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "prompts"
+)
 
 
 def _read_prompt(filename: str) -> str:
@@ -116,7 +118,7 @@ def ollama_api_notes(
         model=model,
         prompt=prompt,
         system=system_prompt,
-        think=think,  # type: ignore
+        think=think,
         options={"num_ctx": num_ctx},
     )  # type: ignore
 
@@ -130,11 +132,17 @@ def ollama_api_notes(
             f.write(response.thinking or "No thought process returned.")
 
     if response.total_duration:
-        log(_STAGE, f"Response time: {response.total_duration / 1e9 / 60:.2f} minutes")
+        log(
+            _STAGE,
+            f"Response time: {response.total_duration / 1e9 / 60:.2f} minutes",
+        )
     if response.prompt_eval_count:
         log(_STAGE, f"Actual input tokens: {response.prompt_eval_count}")
         if approx_tokens <= response.prompt_eval_count:
-            log(_STAGE, "Warning: Approximate tokens was less than or equal to actual input tokens")
+            log(
+                _STAGE,
+                "Warning: Approximate tokens was less than or equal to actual input tokens",
+            )
             log(_STAGE, "Consider adjusting the approximate tokens calculation")
     if response.eval_count:
         log(_STAGE, f"Output tokens: {response.eval_count}")

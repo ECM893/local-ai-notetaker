@@ -53,7 +53,7 @@ def main():
     parser.add_argument(
         "-o",
         "--output-folder",
-        help="Output folder to save transcript and notes (default: Transcripts/<meeting-folder-name>/).",
+        help="Output folder to save transcript and notes (default: transcripts/<meeting-folder-name>/).",
         default=None,
     )
     parser.add_argument(

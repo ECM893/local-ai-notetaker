@@ -35,8 +35,14 @@ def convert_audio_files(meeting_folder_path: str) -> None:
             log(_STAGE, f"  Converting: {f}")
             subprocess.run(
                 [
-                    "ffmpeg", "-i", f.replace(".wav", ".m4a"),
-                    "-ac", "1", "-ar", "16000", f,
+                    "ffmpeg",
+                    "-i",
+                    f.replace(".wav", ".m4a"),
+                    "-ac",
+                    "1",
+                    "-ar",
+                    "16000",
+                    f,
                 ],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -73,8 +79,14 @@ def convert_audio_files(meeting_folder_path: str) -> None:
             log(_STAGE, f"  Converting: {f.replace('.m4a', '.wav')}")
             subprocess.run(
                 [
-                    "ffmpeg", "-i", f,
-                    "-ac", "1", "-ar", "16000", f.replace(".m4a", ".wav"),
+                    "ffmpeg",
+                    "-i",
+                    f,
+                    "-ac",
+                    "1",
+                    "-ar",
+                    "16000",
+                    f.replace(".m4a", ".wav"),
                 ],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -256,7 +268,10 @@ def get_unconverted_audio_files(
     ]
 
     if unconverted_files:
-        log(_STAGE, f"Unconverted audio files in {os.path.dirname(audio_files[0])}:")
+        log(
+            _STAGE,
+            f"Unconverted audio files in {os.path.dirname(audio_files[0])}:",
+        )
         for f in unconverted_files:
             log(_STAGE, f"  {os.path.basename(f)}")
     else:
@@ -266,7 +281,7 @@ def get_unconverted_audio_files(
 
 
 def align_audio_file_offsets(
-    wav_files: list[str], master_audio_wav: str
+    wav_files: dict, master_audio_wav: str
 ) -> dict[str, float]:
     """
     Compute time offsets for each speaker file relative to a master audio track.
@@ -328,7 +343,7 @@ def gather_wave_files(meeting_folder_path: str) -> list[str]:
     return wave_list
 
 
-def get_recordings_dict(wave_files: list) -> bool:
+def get_recordings_dict(wave_files: list) -> dict:
     """Check folder for split recordings"""
     # Pattern is the literal 'audio' followed by '<name>' '<recording number(single digit)> '<duplicate number(single digit)>' '<9 digit magic number>'
     # The name can be numbers letters and dots
@@ -391,12 +406,15 @@ def combine_audio_files(wav_list: list) -> dict:
                 ]  # Sort by duplicate number
                 concat_wavs_copy(files_list, combined_file_path)
             else:
-                log(_STAGE, f"Combined file already exists, skipping: {combined_file_path}")
+                log(
+                    _STAGE,
+                    f"Combined file already exists, skipping: {combined_file_path}",
+                )
 
         return wav_dict_new
 
 
-def concat_wavs_copy(wavs: list[str | Path], out_path: str | Path) -> Path:
+def concat_wavs_copy(wavs: list[str | Path], out_path: str | Path):
     wavs = [Path(p).resolve() for p in wavs]
     out_path = Path(out_path)
 
@@ -410,6 +428,7 @@ def concat_wavs_copy(wavs: list[str | Path], out_path: str | Path) -> Path:
     )
     try:
         for p in wavs:
+            p = Path(p)
             tf.write(f"file '{p.as_posix()}'\n")
         tf.flush()
         tf.close()

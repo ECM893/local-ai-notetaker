@@ -35,18 +35,34 @@ def validate_args(args: argparse.Namespace, parser: argparse.ArgumentParser):
     # __file__ is src/lain/tools/validate_inputs.py → 4x dirname to reach project root
     if args.output_folder is None and args.meeting_folder:
         meeting_name = os.path.basename(args.meeting_folder)
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-        args.output_folder = os.path.join(project_root, "Transcripts", meeting_name)
+        project_root = os.path.dirname(
+            os.path.dirname(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            )
+        )
+        args.output_folder = os.path.join(
+            project_root, "transcripts", meeting_name
+        )
     elif args.output_folder is None:
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-        args.output_folder = os.path.join(project_root, "Transcripts")
+        project_root = os.path.dirname(
+            os.path.dirname(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            )
+        )
+        args.output_folder = os.path.join(project_root, "transcripts")
 
     args.output_folder = os.path.normpath(args.output_folder)
     os.makedirs(args.output_folder, exist_ok=True)
 
     if args.pyannotate_hf_token and args.audio_folder:
-        log(_STAGE, "Warning: pyannotate_hf_token is set and audio_folder is provided")
-        log(_STAGE, "Warning: pyannotate is only used for single audio file and will be skipped")
+        log(
+            _STAGE,
+            "Warning: pyannotate_hf_token is set and audio_folder is provided",
+        )
+        log(
+            _STAGE,
+            "Warning: pyannotate is only used for single audio file and will be skipped",
+        )
 
     asr_models = (
         "parakeet-tdt-0.6b-v2",
@@ -67,7 +83,9 @@ def validate_args(args: argparse.Namespace, parser: argparse.ArgumentParser):
     return args
 
 
-def get_meeting_start_time_from_folder_name(folder_name: str) -> datetime:
+def get_meeting_start_time_from_folder_name(
+    folder_name: str,
+) -> datetime | None:
     """Zoom Folder based meeting start time extraction"""
     base_folder_name = os.path.basename(folder_name)
     match = re.match(
