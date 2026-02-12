@@ -118,7 +118,7 @@ def ollama_api_notes(
         model=model,
         prompt=prompt,
         system=system_prompt,
-        think=think,  # type: ignore
+        think=think,
         options={"num_ctx": num_ctx},
         keep_alive=0,  # Unload model from GPU immediately after generation
     )
