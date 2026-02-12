@@ -118,9 +118,10 @@ def ollama_api_notes(
         model=model,
         prompt=prompt,
         system=system_prompt,
-        think=think,
+        think=think,  # type: ignore
         options={"num_ctx": num_ctx},
-    )  # type: ignore
+        keep_alive=0,  # Unload model from GPU immediately after generation
+    )
 
     # If save thought process is enabled, print out to file for debugging
     if save_thought_process:
@@ -146,6 +147,7 @@ def ollama_api_notes(
             log(_STAGE, "Consider adjusting the approximate tokens calculation")
     if response.eval_count:
         log(_STAGE, f"Output tokens: {response.eval_count}")
+    log(_STAGE, f"Ollama model '{model}' unloaded from memory")
 
     resp_raw = response["response"]
 

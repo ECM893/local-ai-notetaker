@@ -4,6 +4,7 @@ Uses Silero VAD for silence detection to skip empty/silent audio.
 Multi-speaker audio files (diarization) not yet implemented.
 """
 
+import gc
 import io
 import logging
 import os
@@ -159,10 +160,13 @@ def transcribe_audio_multi(
             )
         transcriptions[speaker] = segments
 
-    # Clean up models
+    # Clean up models from GPU memory
+    asr_model.cpu()
     del asr_model
     del vad_model
+    gc.collect()
     torch.cuda.empty_cache()
+    log(_STAGE, "ASR models unloaded from GPU")
     return transcriptions
 
 
