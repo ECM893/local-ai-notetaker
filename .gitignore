@@ -1,19 +1,24 @@
-# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
 *.py[cod]
+*.egg-info/
 
 # Virtual environment
+.venv/
 venv/
 .env
-# pytest cache
-.pytest_cache/
+
 # Distribution / packaging
 build/
 dist/
-*.egg-info/
 
+# Testing
+.pytest_cache/
+
+# IDE
 .vscode/
-Transcripts/*
-recordings/*
 
+# Project-specific
+Transcripts/
+recordings/
 .gitattributes

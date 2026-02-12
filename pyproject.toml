@@ -1,8 +1,8 @@
 [project]
 requires-python = "==3.12.12"
-name = "offline_meeting_notes"
+name = "lain"
 version = "0.1.0"
-description = "Offline meeting notetaker using NeMo Parakeet ASR and transformers."
+description = "Local AI Notetaker - offline meeting notes from Zoom recordings using Parakeet ASR and Ollama."
 readme = "README.md"
 dependencies = [
     "pyannote.audio",
@@ -11,7 +11,6 @@ dependencies = [
     "transformers",
     "pytest",
     "accelerate",
-    # "triton==3.4",
     "kernels",
     "pypandoc",
     "scipy",

@@ -1,134 +1,96 @@
-# Offline Meeting Notes
+# LAIN - Local AI Notetaker
 
-Offline Meeting Notes is a CLI tool that generates concise meeting minutes from an audio file using, WhisperX (OpenAI Whisper, faster-whisper, phoneme-model) for transcription/Alignment, and local transformer-based summarization (via Ollama).
-The current version works with Zoom meetings where each participand has their own audio file.
+LAIN is an offline CLI tool that generates meeting notes from Zoom recordings using NVIDIA Parakeet ASR for transcription and Ollama thinking models for summarization. All processing runs locally on your hardware.
 
+The current version works with Zoom meetings where each participant has their own audio file.
 
-## Basic Workflow
-1. Zoom recording folder selection
-2. Audio file conversion to WAV (ffmpeg)
-3. Audio file offset Calculation (librosa)(currently not implemented)
-4. Individual Audio stream transcription (Whisper/Whisperx)
-5. Transcript Interleaving
-6. Meeting notetaking (Ollama python API using Thinking models)
-7. Markdown meeting notes to Word doc conversion (pandoc/pypandoc)
+## Workflow
+
+1. Select a Zoom recording folder
+2. Convert audio files to WAV (ffmpeg)
+3. Transcribe individual audio streams (Parakeet-TDT)
+4. Interleave transcripts by timestamp
+5. Generate meeting notes (Ollama thinking models)
+6. Save as Markdown
 
 ## Prerequisites
 
-**Python:**
-- Requires Python 3.11 (You can verify with `python --version`).
+- **Python 3.12** (`python --version`)
+- **NVIDIA GPU** with at least 12GB VRAM and compatible CUDA drivers
+- **ffmpeg** installed and in your `PATH`
+- **Ollama** server running with a thinking model pulled
 
-**System dependencies:**
-- **ffmpeg** must be installed and available in your `PATH`.
-  - On Ubuntu/Debian:
-    ```bash
-    sudo apt update; sudo apt install ffmpeg
-    ```
+### System Dependencies (Ubuntu/Debian)
 
-## Installation with UV
+```bash
+sudo apt update && sudo apt install ffmpeg pandoc
+```
 
-1. Install 'ffmpeg':
+## Installation
+
+1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if you haven't already.
+
+2. From the project root:
    ```bash
-   sudo apt update; sudo apt install ffmpeg
+   uv sync
    ```
-
-2. Install Pandoc (if you haven’t already):
-   ```bash
-   sudo apt update; sudo apt install pandoc
-   ```
-
-3. Install UV (if you haven’t already):
-   ```bash
-   pip3 install --user uv
-   ```
-
-4. From the project root (where `pyproject.toml` is):
-   - Install runtime dependencies:
-     ```bash
-     uv sync
-     ```
-    > **(Optional) If you see a warning about failed hardlinks:**
-    > - Set the environment variable:
-    >   ```bash
-    >   export UV_LINK_MODE=copy
-    >   ```
-    > - Or use the `--link-mode=copy` flag:
-    >   ```bash
-    >   uv sync --link-mode=copy
-    >   ```
-     ```
-
-5. It is possible to have an error like: 'Could not load library libcudnn_ops_infer.so.8. Error: libcudnn_ops_infer.so.8: cannot open shared object file: No such file or directory
-Aborted (core dumped)' if you do, check the bottom notes for a solution
 
 ## Usage
 
-To run the notetaker without activating the venv:
 ```bash
-uv run offline-meeting-notes -f <zoom_recording_folder>
+# Basic usage - process a Zoom recording folder
+lain -f <zoom_recording_folder>
+
+# Full options
+lain -f <zoom_recording_folder> \
+     -l <ollama_model> \
+     -o <output_folder> \
+     -s "YYYY-MM-DD HH:MM:SS" \
+     --overwrite
+
+# Show all options
+lain --help
 ```
 
-Or activate manually in Bash and run:
+If you haven't activated the virtualenv, prefix with `uv run`:
 ```bash
-source .venv/bin/activate
-offline-meeting-notes -h
-offline-meeting-notes -f <zoom_recording_folder> -l <llm model> -o <output_folder> --start-time "YYYY-MM-DD HH:MM:SS" --over-write
+uv run lain -f <zoom_recording_folder>
 ```
 
-# Notes:
 ## Zoom Settings
-Set Local recording storage for your zoom recordings.
 
-It's recommended (required) to adjust some settings for your zoom recordings:
-From zoom app -> Settings -> Recording -> Advanced:
-- Record separate participant audio files
-- Optimize for 3rd party video editors
+Set local recording storage for your Zoom recordings.
 
-## LLM Compatibility
-Currently Only 'thinking' models from Ollama are supported. Ensure your Ollama server is running and accessible.
-## GPU Support
-Ensure you have a compatible NVIDIA GPU and the correct CUDA version installed for PyTorch. (recommended at least 12GB VRAM)
-## Zoom Recording Structure
-The folder structure should be similar to Zoom's default recording layout
-The 'Audio Record' folder must be named exactly that.
-Structure must look like:
+From the Zoom app, go to **Settings > Recording > Advanced** and enable:
+- **Record separate participant audio files**
+- **Optimize for 3rd party video editors**
+
+### Expected Folder Structure
+
+The `Audio Record` folder must be named exactly that.
+
 ```
 <meeting_folder>/
-    <master_recording>.mp4
+    <master_recording>.m4a
     Audio Record/
-        <audio1>.mp4
-        <audio2>.mp4
+        <audio1>.m4a
+        <audio2>.m4a
         ...
 ```
-## Whisperx known issue
-If using whisperx and you get a 'Could not load library libcudnn_ops_infer.so.8. Error: libcudnn_ops_infer.so.8: cannot open shared object file: No such file or directory
-Aborted (core dumped)' error, try: (This fix is for Ubuntu distros)
 
-```
-curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-cuda-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/nvidia-cuda-keyring.gpg] https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/ /" | sudo tee /etc/apt/sources.list.d/nvidia-cuda.list
-sudo apt update
-sudo apt install libcudnn8 libcudnn8-dev
-echo "/usr/lib/x86_64-linux-gnu" | sudo tee /etc/ld.so.conf.d/cudnn.conf
-sudo ldconfig
-```
-and check 
+## Notes
 
-```
-ldconfig -p | grep libcudnn_ops_infer
-```
+### LLM Compatibility
 
-should print 
-```
-(whisperx) ➜  ~ ldconfig -p | grep libcudnn_ops_infer
-        libcudnn_ops_infer.so.8 (libc6,x86-64) => /usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8
-        libcudnn_ops_infer.so (libc6,x86-64) => /usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so
-```
-# TODO:
-- Add support for simpler LLMs (Non-thinking models)
-- Add support for single audio file with diarization (pyannote)
-- Add support for non-Ollama based Models
-- Test fresh installation
-- Add updated tests
-- Check OS support, shouldn't matter but still (Currently working on Ubuntu 24)
-- Remake Pytests to actually work again
+Currently only thinking models from Ollama are supported. Ensure your Ollama server is running and the model is pulled before running LAIN.
+
+### GPU Support
+
+A compatible NVIDIA GPU with CUDA support is required. At least 12GB VRAM is recommended for the ASR model.
+
+## TODO
+
+- Support for simpler (non-thinking) LLMs
+- Single audio file with diarization (pyannote)
+- Non-Ollama model backends
+- Cross-platform testing (currently validated on Ubuntu/Arch)

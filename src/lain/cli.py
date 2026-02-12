@@ -36,7 +36,7 @@ def main():
     parser.add_argument(
         "-p",
         "--pyannotate-hf-token",
-        help="Hugging Face token for pyannote (required for diarization).",
+        help="Hugging Face token for pyannote (required for diarization, currently not implemented).",
     )
     parser.add_argument(
         "-m",
