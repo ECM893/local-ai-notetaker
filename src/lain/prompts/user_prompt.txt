@@ -1,0 +1,6 @@
+Summarize the meeting transcript into the specified JSON schema.
+Return JSON only (no Markdown, no extra text).
+
+Transcript:
+
+{transcript}

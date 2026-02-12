@@ -1,6 +1,7 @@
 import argparse
 import shutil
-from .tools.validate_inputs import validate_args
+
+from lain.tools.validate_inputs import validate_args
 
 
 def main():
@@ -35,13 +36,13 @@ def main():
     parser.add_argument(
         "-p",
         "--pyannotate-hf-token",
-        help="Hugging Face token for pyannote (required for diarization).",
+        help="Hugging Face token for pyannote (required for diarization, currently not implemented).",
     )
     parser.add_argument(
-        "-w",
-        "--whisper-model",
-        default="turbo",
-        help="Whisper model size (e.g., tiny, base, small, medium, large, turbo).",
+        "-m",
+        "--asr-model",
+        default="parakeet-tdt-0.6b-v2",
+        help="ASR model name (e.g., parakeet-tdt-0.6b-v2, parakeet-tdt-1.1b).",
     )
     parser.add_argument(
         "-l",
@@ -52,8 +53,8 @@ def main():
     parser.add_argument(
         "-o",
         "--output-folder",
-        help="Output folder to save transcript and notes (default: output/).",
-        default="offline_meeting_notes/output/",
+        help="Output folder to save transcript and notes (default: Transcripts/<meeting-folder-name>/).",
+        default=None,
     )
     parser.add_argument(
         "-s",
@@ -84,10 +85,13 @@ def main():
 
     # Ensure ffmpeg is installed for audio processing
     if shutil.which("ffmpeg") is None:
-        parser.error("ffmpeg is required but not found in PATH. Please install ffmpeg.")
+        parser.error(
+            "ffmpeg is required but not found in PATH. Please install ffmpeg."
+        )
 
     if args:
-        from .note_taker_pipeline import note_taker_pipeline
+        from lain.note_taker_pipeline import note_taker_pipeline
+
         note_taker_pipeline(args)
 
 
