@@ -19,6 +19,6 @@ dist/
 .vscode/
 
 # Project-specific
-Transcripts/
+transcripts/
 recordings/
 .gitattributes
