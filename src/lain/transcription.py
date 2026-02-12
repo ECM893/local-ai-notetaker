@@ -4,13 +4,26 @@ Uses Silero VAD for silence detection to skip empty/silent audio.
 Multi-speaker audio files (diarization) not yet implemented.
 """
 
+import io
+import logging
+import os
 import pickle
+import sys
+import warnings
 from datetime import datetime, timedelta
 
-import nemo.collections.asr as nemo_asr
-import torch
+# Suppress upstream library noise during NeMo import
+warnings.filterwarnings("ignore", message=".*pkg_resources is deprecated.*")
+_stderr = sys.stderr
+sys.stderr = io.StringIO()
 
-from lain.tools.log import log
+import nemo.collections.asr as nemo_asr  # noqa: E402
+import torch  # noqa: E402
+
+sys.stderr = _stderr
+logging.getLogger("nemo_logger").setLevel(logging.ERROR)
+
+from lain.tools.log import log  # noqa: E402
 
 _STAGE = "Transcribe"
 
